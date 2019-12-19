@@ -8,3 +8,4 @@ Setup:
 - cd into folder
 - run `bundle`
 - run rspec spec/models/intro_to_sql_specs.rb
+# activeRecordQueries121819
