@@ -10,21 +10,24 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can find records and attributes" do
       #What is the area of the US?
+      us = Country.where(code: 'USA').first
       expect(us.surfacearea).to eq(9363520.0)
     end
 
     it "can find records and attributes" do
       #What is the population of Canada?
+      canada = Country.where(code: 'CAN').first
       expect(canada.population).to eq(31147000)
     end
 
     it "can find records and attributes" do
       #What is the area of Canada?
+      canada = Country.where(code: 'CAN').first
       expect(canada.surfacearea).to eq(9970610.0)
     end
 
 
-    it "can find records via equality comparrison (class)" do
+    it "can find records via equality comparison (class)" do
       #List the number of countries in Europe that have a surface area greater than 200,000 km squared.
       area = 200_000
       countries = Country
@@ -33,40 +36,62 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
       expect(countries.count).to eq(13)
     end
 
-    it "can find records via equality comparrison" do
+    it "can find records via equality comparison" do
       #List the countries in Europe that have a life expectancy of more than 78?
+      countries= Country
+        .where(continent: 'Europe')
+        .where("lifeexpectancy > 78")
       expect(countries.count).to eq(15)
     end
 
-    it "can find records via equality comparrison" do
+    it "can find records via equality comparison" do
       #List the countries in Europe that have a life expectancy of less than 77?
+      countries = Country
+      .where("lifeexpectancy < 77")
+      .where(continent: 'Europe')
       expect(countries.count).to eq(22)
     end
 
     it "can combine comaparisons" do
       #List the countries in Europe that have a life expectancy of less than 77 and surfacearea less than 50,000 km.?
+      countries = Country
+      .where(continent: 'Europe')
+      .where("lifeexpectancy < 77")
+      .where("surfacearea < 50000")
       expect(countries.count).to eq(7)
     end
 
-    it "can find records via equality comparrison" do
+    it "can find records via equality comparison" do
       #List the countries that have a population smaller than 30,000,000 and a life expectancy of more than 45?
-      expect(countries.count).to eq(35)
+      countries = Country
+      .where("population < 30000000")
+      .where("lifeexpectancy > 45")
+      expect(countries.count).to eq(175)
     end
 
     it "can find records via multiple equality comparrisons" do
       #List the countries in Africa that have a population smaller than 30,000,000 and a life expectancy of more than 45?
+      countries = Country
+      .where(continent: 'Africa')
+      .where("population > 30000000")
+      .where("lifeexpectancy > 45")
       expect(countries.count).to eq(8)
    end
 
     it "can find records using wildcards" do
       #Which countries are something like a republic?
       #(are there 122 or 143 countries or ?)
+      countries = Country
+      .where("governmentform LIKE '%epublic'")
       expect(countries.count).to eq(143)
 
     end
 
     it "can have multiple selects" do
       #Which countries are some kind of republic and achieved independence after 1945?
+      countries = Country
+      .where("governmentform LIKE '%epublic'")
+      .where("indepyear > 1945")
       expect(countries.count).to eq(92)
     end
   end
@@ -84,17 +109,29 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can use order" do
       # Which country has the highest life expectancy?
+      country = Country
+      .order("lifeexpectancy DESC")
+      .limit(1)
+      .first
       expect(country.code).to eq('FLK')
     end
 
     it "can use order" do
       #Which is the smallest country by area
+      country = Country
+      .order("surfacearea ASC")
+      .limit(1)
+      .first
       expect(country.code).to eq('VAT')
 
     end
 
     it "can use order" do
       #which is the biggest country by area
+      country = Country
+      .order("surfacearea DESC")
+      .limit(1)
+      .first
       expect(country.code).to eq('RUS')
 
 
@@ -102,11 +139,19 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can use order" do
       #Which is the smallest country by population
+      country = Country
+      .order("population ASC")
+      .limit(1)
+      .first
       expect(country.code).to eq('ATA')
     end
 
     it "can use order" do
       #which is the biggest country by population
+      country = Country
+      .order("population DESC")
+      .limit(1)
+      .first
       expect(country.code).to eq('CHN')
 
     end
@@ -129,6 +174,10 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can combine order and limit" do
       #Which five countries have the lowest population density?
+      country_names = Country
+      .order(Arel.sql('population / surfacearea'))
+      .limit(5)
+      .pluck(:name)
       expected = ["South Georgia and the South Sandwich Islands", "Bouvet Island", "Antarctica", "British Indian Ocean Territory", "Heard Island and McDonald Islands"]
 
       expected.map do |country|
@@ -139,6 +188,10 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can combine order and limit" do
       #which five countries have the highest population density?
+      country_names = Country
+      .order(Arel.sql('population/ surfacearea DESC'))
+      .limit(5)
+      .pluck(:name)
       expected = ["Macao", "Monaco", "Hong Kong", "Singapore", "Gibraltar"]
 
       expected.map do |country|
@@ -149,6 +202,10 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can combine order and limit" do
       #Which are the 10 smallest countries by area?
+      countries = Country
+      .order("surfacearea ASC")
+      .limit(10)
+      .pluck(:name)
       expected = ["Holy See (Vatican City State)", "Monaco", "Gibraltar", "Tokelau", "Cocos (Keeling) Islands", "United States Minor Outlying Islands", "Macao", "Nauru", "Tuvalu", "Norfolk Island"]
       expected.map do |country|
         expect(countries).to include(country)
@@ -170,22 +227,40 @@ RSpec.describe "Practice with ActiveRecord", type: :model do
 
     it "can simplify 'with' queries" do
       #Of the largest 10 countries by surfacearea, which has the smallest gnp?
-      expect(smallest_biggest.name).to eq("Antarctica")
+      countries = Country
+        .order("surfacearea DESC")
+        .limit(10)
+      big_biggest = countries.min{|a,b| a.gnp <=> b.gnp}
+      expect(big_biggest.name).to eq("Antarctica")
     end
 
     it "can simplify 'with' queries" do
       #Of the biggest 10 countries by population, which has the biggest gnp?
+      countries = Country
+      .order("population DESC")
+      .limit(10)
+      biggest_biggest = countries.max{|a,b| a.gnp <=> b.gnp}
       expect(biggest_biggest.name).to eq("United States")
 
     end
 
     it "can simplify 'aggregate' operations (class)" do
       #What is the sum of surface area of the 10 biggest countries in the world?
+      countries = Country
+      .order("surfacearea DESC")
+      .limit(10)
+      .pluck(:surfacearea)
+      sum_total = countries.sum
       expect(sum_total).to eq(84183610.0)
     end
 
     it "can simplify 'aggregate' operations" do
       #What is the sum of surface area of the 10 least populated countries in the world?
+      countries = Country
+      .order("population ASC")
+      .limit(10)
+      .pluck(:surfacearea)
+      sum_total= countries.sum
       expect(sum_total).to eq(13132258.4)
     end
   end
