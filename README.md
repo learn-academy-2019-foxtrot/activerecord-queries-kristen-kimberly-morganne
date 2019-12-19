@@ -9,3 +9,4 @@ Setup:
 - run `bundle`
 - run rspec spec/models/intro_to_sql_specs.rb
 # activeRecordQueries121819
+# activeRecordQueries121819
